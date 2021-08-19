@@ -1,5 +1,5 @@
-# Rec-KGQA KG dataset
-### This folder should include all original open-source datasets: MetaQA & WebQuestionsSP
+# Rec-KGQA QA dataset
+### This folder should include all original open-source QA pairs datasets: MetaQA & WebQuestionsSP
 download them through the following baiduNetdisk.
 
 MetaQA
