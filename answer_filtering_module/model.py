@@ -5,16 +5,16 @@ import numpy as np
 
 
 class Answer_filtering_module(torch.nn.Module):
-    def __init__(self, entity_embeddings, embedding_dim, vocab_size, word_dim, hidden_dim, relation_dim,
+    def __init__(self, entity_embeddings, embedding_dim, vocab_size, word_dim, hidden_dim, fc_hidden_dim, relation_dim,
                  head_bn_filepath, score_bn_filepath):
         super(Answer_filtering_module, self).__init__()
         self.relation_dim = relation_dim * 2
         self.loss_criterion = torch.nn.BCELoss(reduction='sum')
         # hidden_dim * 2 is the BiLSTM + attention layer output
-        self.fc_lstm2hidden = torch.nn.Linear(hidden_dim * 2, 256, bias=True)
+        self.fc_lstm2hidden = torch.nn.Linear(hidden_dim * 2, fc_hidden_dim, bias=True)
         torch.nn.init.xavier_normal_(self.fc_lstm2hidden.weight.data)
         torch.nn.init.constant_(self.fc_lstm2hidden.bias.data, val=0.0)
-        self.fc_hidden2relation = torch.nn.Linear(256, self.relation_dim, bias=False)
+        self.fc_hidden2relation = torch.nn.Linear(fc_hidden_dim, self.relation_dim, bias=False)
         torch.nn.init.xavier_normal_(self.fc_hidden2relation.weight.data)
         self.entity_embedding_layer = torch.nn.Embedding.from_pretrained(torch.tensor(entity_embeddings), freeze=True)
         self.word_embedding_layer = torch.nn.Embedding(vocab_size, word_dim)
@@ -59,3 +59,14 @@ class Answer_filtering_module(torch.nn.Module):
         pred_answers_score = self.complex_scorer(self.entity_embedding_layer(head_entity), relation_embedding)
         loss = self.loss_criterion(pred_answers_score, tail_entity)
         return loss
+
+    def get_ranked_top_k(self, question, questions_length, head_entity, max_sent_len, K=5):
+        embedded_question = self.word_embedding_layer(question.unsqueeze(0))
+        packed_input = pack_padded_sequence(embedded_question, questions_length, batch_first=True)
+        packed_output, _ = self.BiLSTM(packed_input)
+        output, _ = pad_packed_sequence(packed_output, batch_first=True, padding_value=0.0, total_length=max_sent_len)
+        output = self.attention_layer(output.permute(1, 0, 2), questions_length)
+        output = torch.nn.functional.relu(self.fc_lstm2hidden(output))
+        relation_embedding = self.fc_hidden2relation(output)
+        pred_answers_score = self.complex_scorer(self.entity_embedding_layer(head_entity), relation_embedding)
+        return torch.topk(pred_answers_score, k=K, dim=-1, largest=True, sorted=True)

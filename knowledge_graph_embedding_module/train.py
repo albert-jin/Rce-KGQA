@@ -220,7 +220,7 @@ class Experiment:
                         print('overall best evaluation:', best_eval)
                     print(f'test time cost: [{time.time() - start_test}]')
             if scheduler:
-                scheduler.step()
+                scheduler.step(epoch=None)
         print(f'training over, saving checkpoint to {self.final_model_save_dir}')
         self.save_checkpoint(model, model_dir=self.final_model_save_dir)
         print('final model saved!')
