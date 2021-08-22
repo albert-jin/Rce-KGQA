@@ -32,7 +32,7 @@ qa_testdataset_path = QA_PAIRS_PATH % 'test'
 BEST_OR_FINAL = 'best'
 assert BEST_OR_FINAL in ['best', 'final']
 KG_EMBED_PATH = f'../knowledge_graph_embedding_module/kg_embeddings/{KG_NAME}{"_half" if KG_HALF else "_full"}/' \
-                f'best_checkpoint/{BEST_OR_FINAL}_checkpoint/%s'
+                f'{BEST_OR_FINAL}_checkpoint/%s'
 score_bn_path = KG_EMBED_PATH % 'score_bn.npy'
 head_bn_path = KG_EMBED_PATH % 'head_bn.npy'
 R_path = KG_EMBED_PATH % 'R.npy'
@@ -67,7 +67,8 @@ model = Answer_filtering_module(entity_embeddings=entity_embeddings, embedding_d
                                 relation_dim=relation_dim,
                                 head_bn_filepath=head_bn_path, score_bn_filepath=score_bn_path)
 if load_from:
-    model.load_state_dict(torch.load(load_from))
+    # model.load_state_dict(torch.load(load_from))
+    model = torch.load(load_from)
 model.to(device=torch.device('cuda'))
 model.train()
 # ====training hyper-parameters prepare=====
@@ -75,8 +76,8 @@ TRAINING_RESULTS_DIR = os.path.join('.', '_'.join([KG_NAME, "half" if KG_HALF el
                                                    time.asctime().replace(' ', '_').replace(':', '_')]))
 if not os.path.isdir(TRAINING_RESULTS_DIR):
     os.mkdir(TRAINING_RESULTS_DIR)
-best_model_path = os.path.join(TRAINING_RESULTS_DIR, 'best_model.pt')
-final_model_path = os.path.join(TRAINING_RESULTS_DIR, 'final_model.pt')
+best_model_path = os.path.join(TRAINING_RESULTS_DIR, 'best_afm_model.pt')
+final_model_path = os.path.join(TRAINING_RESULTS_DIR, 'final_afm_model.pt')
 N_EPOCHS = 200
 PATIENCE = 5
 LR = 0.0001
@@ -152,7 +153,8 @@ for epoch_idx in range(N_EPOCHS):
         model.train()
         if eval_correct_rate > best_val_score + 0.0001:
             logger.info(f'evaluation accuracy hit@{TEST_TOP_K} increases from {best_val_score} to {eval_correct_rate}, save the model to {best_model_path}.')
-            torch.save(model.state_dict(), best_model_path)
+            # torch.save(model.state_dict(), best_model_path)
+            torch.save(model, best_model_path)
             best_val_score = eval_correct_rate
             NO_UPDATE = 0
         elif NO_UPDATE >= PATIENCE:
@@ -161,5 +163,6 @@ for epoch_idx in range(N_EPOCHS):
         else:
             NO_UPDATE += 1
 logger.info(f"final epoch has reached. stop and save model to {final_model_path}.")
-torch.save(model.state_dict(), final_model_path)
+# torch.save(model.state_dict(), final_model_path)
+torch.save(model, final_model_path)
 logger.info("bingo.")
