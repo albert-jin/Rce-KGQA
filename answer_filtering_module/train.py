@@ -76,6 +76,10 @@ TRAINING_RESULTS_DIR = os.path.join('.', '_'.join([KG_NAME, "half" if KG_HALF el
                                                    time.asctime().replace(' ', '_').replace(':', '_')]))
 if not os.path.isdir(TRAINING_RESULTS_DIR):
     os.mkdir(TRAINING_RESULTS_DIR)
+if not os.path.exists(os.path.join(TRAINING_RESULTS_DIR, 'word_idx.txt')):
+    with open(os.path.join(TRAINING_RESULTS_DIR, 'word_idx.txt'), 'wt', encoding='utf-8') as outp:
+        for word, idx in word_idx.items():
+            outp.write(word + '\t' + idx + '\n')
 best_model_path = os.path.join(TRAINING_RESULTS_DIR, 'best_afm_model.pt')
 final_model_path = os.path.join(TRAINING_RESULTS_DIR, 'final_afm_model.pt')
 N_EPOCHS = 200
@@ -112,9 +116,10 @@ def correct_rate(head_entity, topK_entity_idx, answers):
     for candid in topK_entity_idx:
         if candid != head_entity and candid in answers:
             points += 1
-    return points/len(topK_entity_idx)
+    return points / len(topK_entity_idx)
 
 
+# ====training step=====
 for epoch_idx in range(N_EPOCHS):
     epoch_idx += 1
     avg_epoch_loss = 0
@@ -138,21 +143,26 @@ for epoch_idx in range(N_EPOCHS):
                                                              batch_head_entity, max_sent_len, K=TEST_TOP_K)
             ranked_topK_entity_idxs = ranked_topK_entity_idxs.tolist()
             batch_head_entity = batch_head_entity.tolist()
-            batch_correct_rate = np.sum(np.array([correct_rate(head_entity=head_entity, topK_entity_idx=ranked_topK_entity_idxs[idx],
-                                        answers=batch_answers[idx]) for idx, head_entity in enumerate(batch_head_entity)]))
+            batch_correct_rate = np.sum(
+                np.array([correct_rate(head_entity=head_entity, topK_entity_idx=ranked_topK_entity_idxs[idx],
+                                       answers=batch_answers[idx]) for idx, head_entity in
+                          enumerate(batch_head_entity)]))
             eval_correct_rate += batch_correct_rate
         for batch_questions_index, batch_questions_length, batch_head_entity, batch_answers, max_sent_len in epoch_test_process:
             ranked_topK_entity_idxs = model.get_ranked_top_k(batch_questions_index, batch_questions_length,
                                                              batch_head_entity, max_sent_len, K=TEST_TOP_K)
             ranked_topK_entity_idxs = ranked_topK_entity_idxs.tolist()
             batch_head_entity = batch_head_entity.tolist()
-            batch_correct_rate = np.sum(np.array([correct_rate(head_entity=head_entity, topK_entity_idx=ranked_topK_entity_idxs[idx],
-                                        answers=batch_answers[idx]) for idx, head_entity in enumerate(batch_head_entity)]))
+            batch_correct_rate = np.sum(
+                np.array([correct_rate(head_entity=head_entity, topK_entity_idx=ranked_topK_entity_idxs[idx],
+                                       answers=batch_answers[idx]) for idx, head_entity in
+                          enumerate(batch_head_entity)]))
             eval_correct_rate += batch_correct_rate
         eval_correct_rate /= (len(qa_test_dataloader) + len(qa_dev_dataloader))
         model.train()
         if eval_correct_rate > best_val_score + 0.0001:
-            logger.info(f'evaluation accuracy hit@{TEST_TOP_K} increases from {best_val_score} to {eval_correct_rate}, save the model to {best_model_path}.')
+            logger.info(
+                f'evaluation accuracy hit@{TEST_TOP_K} increases from {best_val_score} to {eval_correct_rate}, save the model to {best_model_path}.')
             # torch.save(model.state_dict(), best_model_path)
             torch.save(model, best_model_path)
             best_val_score = eval_correct_rate

@@ -25,7 +25,7 @@ class Relational_chain_reasoning_module(torch.nn.Module):
         self.max_sent_len = max_sent_len
         self.cuda()
 
-    def forward(self, question_text, relational_chain_idxs, relation_chain_lengths, max_chain_len, is_test=False):
+    def forward(self, question_text, relational_chain_idxs, relation_chain_lengths, max_chain_len, label, is_test=False):
         """
             获取question 描述 和 关系链relational_chain 的相似度
         :param is_test: True:测试时 获取相似度, 默认False:训练时获取loss
@@ -56,5 +56,5 @@ class Relational_chain_reasoning_module(torch.nn.Module):
             similarity = self.loss_criterion.get_similarity(roberta_outputs, chain_outputs)
             return similarity
         else:
-            euclidean_loss = self.loss_criterion(roberta_outputs, chain_outputs)
+            euclidean_loss = self.loss_criterion(roberta_outputs, chain_outputs, label=label)
             return euclidean_loss
