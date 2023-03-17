@@ -55,3 +55,24 @@ relational questions.
 | Our Model | 70.4 ||
 
 Hope you enjoy it !!!  Arxiv link: https://arxiv.org/abs/2110.12679
+
+If this work helps you, please cite it. thanks!
+
+```
+@Article{jwq2022rcekgqa,
+author={Jin, Weiqiang
+and Zhao, Biao
+and Yu, Hang
+and Tao, Xi
+and Yin, Ruiping
+and Liu, Guizhong},
+title={Improving embedded knowledge graph multi-hop question answering by introducing relational chain reasoning},
+journal={Data Mining and Knowledge Discovery},
+year={2022},
+month={Nov},
+day={11},
+issn={1573-756X},
+doi={10.1007/s10618-022-00891-8},
+url={https://doi.org/10.1007/s10618-022-00891-8}
+}
+```
